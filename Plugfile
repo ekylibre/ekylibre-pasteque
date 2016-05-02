@@ -1,0 +1,11 @@
+
+add_routes do
+  namespace :pasteque do
+    # namespace :v6 do
+    #   pasteque_v6
+    # end
+    namespace :v5 do
+      pasteque_v5
+    end
+  end
+end
