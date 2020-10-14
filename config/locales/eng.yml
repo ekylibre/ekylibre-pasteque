@@ -1,0 +1,5 @@
+eng:
+  labels:
+    pasteque_short_description: Pasteque Point Of Sale
+    pasteque_long_description:  Pasteque provides POS for local markets
+    pasteque_url: https://www.pasteque.org/
