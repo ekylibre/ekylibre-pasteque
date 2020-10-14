@@ -1,6 +1,6 @@
 # Ekylibre-Pasteque
 
-This plugin is an extension for Ekylibre to permit use of Ekylibre as a Pasteque server. Pasteque is a POS software on android and PC.
+This plugin is an extension for Ekylibre to deal with Pasteque server API.
+Pasteque is an open source POS software on android and PC.
 
-
-See http://www.pasteque.coop/.
+See https://www.pasteque.org/
