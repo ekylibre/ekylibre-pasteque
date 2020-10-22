@@ -1,6 +1,6 @@
 ---
 fra:
   labels:
-    samsys_short_description: Point de vente
-    samsys_long_description:  Pasteque fournit un outil de caisse pour les points de ventes locaux
-    samsys_url: https://www.pasteque.org/
+    pasteque_short_description: Point de vente
+    pasteque_long_description:  Pasteque fournit un outil de caisse pour les points de ventes locaux
+    pasteque_url: https://www.pasteque.org/

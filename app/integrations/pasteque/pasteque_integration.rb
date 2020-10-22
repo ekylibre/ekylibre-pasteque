@@ -20,26 +20,50 @@ module Pasteque
     # Set url needed for Pasetque API v8
 
     TOKEN_URL = "/api/login".freeze
+    CATEGORY_URL = "/api/category/getAll".freeze
 
     authenticate_with :check do
       parameter :host
-      parameter :login
+      parameter :user
       parameter :password
     end
 
-    calls :get_token
+    # for testing the API in console
+    # host = 'https://5.pasteque.pro/8'
+    # TOKEN_URL = "/api/login".freeze
+    # call_url = host + TOKEN_URL
+    # user = 'ekylibre'
+    # password = 'pasteque'
+    # payload = {"login": login, "password": password}
+    # r =
+
+    calls :get_token, :fetch_category
 
     # Get token with login and password
     def get_token
       integration = fetch
-      payload = {"login": integration.parameters['login'], "password": integration.parameters['password']}
+      payload = {"user": integration.parameters['user'], "password": integration.parameters['password']}
       post_json(integration.parameters['host'] + TOKEN_URL, payload) do |r|
-        r.error :api_down unless r.body.include? 'ok'
         r.success do
-          list = JSON(r.body).deep_symbolize_keys
-          integration.parameters['token'] = list[:jwt]
+          list = JSON(r.body)
+          integration.parameters['token'] = list
           integration.save!
           Rails.logger.info 'CHECKED'.green
+        end
+      end
+    end
+
+    def fetch_category
+      integration = fetch
+      # Get token
+      if integration.parameters['token'].blank?
+        get_token
+      end
+
+      # Call API
+      get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => integration.parameters['token']) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
       end
     end
@@ -47,17 +71,16 @@ module Pasteque
     # Check if the API is up
     def check(integration = nil)
       integration = fetch integration
-      puts integration.inspect.red
-      payload = {"login": integration.parameters['login'], "password": integration.parameters['password']}
+      payload = {"user": integration.parameters['user'], "password": integration.parameters['password']}
       post_json(integration.parameters['host'] + TOKEN_URL, payload) do |r|
         r.success do
-          list = JSON(r.body).deep_symbolize_keys
-          if list[:status] == 'ok'
+          list = JSON(r.code)
+          if list == '200'
             puts "check success".inspect.green
             Rails.logger.info 'CHECKED'.green
           end
-          r.error :wrong_password if list[:status] == '401'
-          r.error :no_account_exist if list[:status] == '404'
+          r.error :wrong_password if list == '401'
+          r.error :no_account_exist if list == '404'
         end
       end
     end
