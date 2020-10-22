@@ -15,15 +15,6 @@ module EkylibrePasteque
 
     initializer :extend_controllers do |app|
       app.config.paths['app/views'].unshift EkylibrePasteque::Engine.root.join('app/views').to_s
-      ::Backend::ProductsController.send(:include, ::EkylibrePasteque::BaseControllerExt)
-      ::Backend::ProductsController.class_eval do
-        prepend_view_path EkylibrePasteque::Engine.root.join('app/views').to_s
-        before_action :prepare_views
-
-        def prepare_views
-          prepend_view_path EkylibrePasteque::Engine.root.join('app/views').to_s
-        end
-      end
     end
 
   end
