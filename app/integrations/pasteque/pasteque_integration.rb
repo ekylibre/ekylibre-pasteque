@@ -21,6 +21,7 @@ module Pasteque
 
     TOKEN_URL = "/api/login".freeze
     CATEGORY_URL = "/api/category/getAll".freeze
+    PROD_BY_CATEGORY_URL = "/api/product/getByCategory/".freeze
 
     authenticate_with :check do
       parameter :host
@@ -37,7 +38,7 @@ module Pasteque
     # payload = {"login": login, "password": password}
     # r =
 
-    calls :get_token, :fetch_category
+    calls :get_token, :fetch_category, :fetch_product_by_category
 
     # Get token with login and password
     def get_token
@@ -59,9 +60,22 @@ module Pasteque
       if integration.parameters['token'].blank?
         get_token
       end
-
       # Call API
       get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => integration.parameters['token']) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+        end
+      end
+    end
+
+    def fetch_product_by_category(category_id)
+      integration = fetch
+      # Get token
+      if integration.parameters['token'].blank?
+        get_token
+      end
+      # Call API
+      get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id, 'Token' => integration.parameters['token']) do |r|
         r.success do
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
