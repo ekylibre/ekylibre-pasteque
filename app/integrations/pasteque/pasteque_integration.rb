@@ -22,6 +22,8 @@ module Pasteque
     TOKEN_URL = "/api/login".freeze
     CATEGORY_URL = "/api/category/getAll".freeze
     PROD_BY_CATEGORY_URL = "/api/product/getByCategory/".freeze
+    PAYMENT_MODES_URL = "/api/paymentmodes/getAll".freeze
+    CASH_REGISTER_URL = "/api/cashregister/getAll".freeze
 
     authenticate_with :check do
       parameter :host
@@ -38,7 +40,7 @@ module Pasteque
     # payload = {"login": login, "password": password}
     # r =
 
-    calls :get_token, :fetch_category, :fetch_product_by_category
+    calls :get_token, :fetch_category, :fetch_product_by_category, :fetch_payment_modes, :fetch_cash_registers
 
     # Get token with login and password
     def get_token
@@ -75,7 +77,35 @@ module Pasteque
         get_token
       end
       # Call API
-      get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id, 'Token' => integration.parameters['token']) do |r|
+      get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id.to_s, 'Token' => integration.parameters['token']) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+        end
+      end
+    end
+
+    def fetch_payment_modes
+      integration = fetch
+      # Get token
+      if integration.parameters['token'].blank?
+        get_token
+      end
+      # Call API
+      get_json(integration.parameters['host'] + PAYMENT_MODES_URL, 'Token' => integration.parameters['token']) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+        end
+      end
+    end
+
+    def fetch_cash_registers
+      integration = fetch
+      # Get token
+      if integration.parameters['token'].blank?
+        get_token
+      end
+      # Call API
+      get_json(integration.parameters['host'] + CASH_REGISTER_URL, 'Token' => integration.parameters['token']) do |r|
         r.success do
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
