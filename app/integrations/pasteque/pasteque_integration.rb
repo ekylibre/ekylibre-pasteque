@@ -48,79 +48,53 @@ module Pasteque
       payload = {"user": integration.parameters['user'], "password": integration.parameters['password']}
       post_json(integration.parameters['host'] + TOKEN_URL, payload) do |r|
         r.success do
-          list = JSON(r.body)
-          integration.parameters['token'] = list
-          integration.save!
-          Rails.logger.info 'CHECKED'.green
+          JSON(r.body)
         end
       end
     end
 
-    def fetch_category
+    def fetch_category(token)
       integration = fetch
-      # Get token
-      if integration.parameters['token'].blank?
-        get_token
-      end
       # Call API
-      get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => integration.parameters['token']) do |r|
+      get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => token) do |r|
         r.success do
-          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
         end
       end
     end
 
-    def fetch_product_by_category(category_id)
+    def fetch_product_by_category(category_id, token)
       integration = fetch
-      # Get token
-      if integration.parameters['token'].blank?
-        get_token
-      end
       # Call API
-      get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id.to_s, 'Token' => integration.parameters['token']) do |r|
+      get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id.to_s, 'Token' => token) do |r|
         r.success do
-          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
         end
       end
     end
 
-    def fetch_payment_modes
+    def fetch_payment_modes(token)
       integration = fetch
-      # Get token
-      if integration.parameters['token'].blank?
-        get_token
-      end
       # Call API
-      get_json(integration.parameters['host'] + PAYMENT_MODES_URL, 'Token' => integration.parameters['token']) do |r|
+      get_json(integration.parameters['host'] + PAYMENT_MODES_URL, 'Token' => token) do |r|
         r.success do
-          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
         end
       end
     end
 
-    def fetch_cash_registers
+    def fetch_cash_registers(token)
       integration = fetch
-      # Get token
-      if integration.parameters['token'].blank?
-        get_token
-      end
       # Call API
-      get_json(integration.parameters['host'] + CASH_REGISTER_URL, 'Token' => integration.parameters['token']) do |r|
+      get_json(integration.parameters['host'] + CASH_REGISTER_URL, 'Token' => token) do |r|
         r.success do
-          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
         end
       end
-    end
-
-    def set_token(integration, r)
-      puts "Set token : #{r.headers}".inspect.green
-      puts "R success : #{r.headers['token'].first}".inspect.green
-      integration.parameters['token'] = r.headers['token'].first
-      integration.save!
     end
 
     # Check if the API is up
@@ -138,6 +112,10 @@ module Pasteque
           r.error :no_account_exist if list == '404'
         end
       end
+    end
+
+    def response(r, **values)
+      { token: r.headers['token'].first, **values }.to_struct
     end
 
   end

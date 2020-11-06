@@ -6,20 +6,31 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
   DEFAULT_CATEGORY = :processed_product
   DEFAULT_VARIANT = :grape
 
+  attr_accessor :token
+
   def perform
-    #TODO
+    # get token because it's refresh on each call in headers
+    Pasteque::PastequeIntegration.get_token.execute do |c|
+      c.success do |r|
+        self.token = r
+      end
+    end
+
+    puts token.inspect.red
+
     begin
       # get category and create/update it
-      Pasteque::PastequeIntegration.fetch_category.execute do |c|
-        c.success do |list|
-          puts list.inspect.yellow
-          list.each do |category|
+      Pasteque::PastequeIntegration.fetch_category(token).execute do |c|
+        c.success do |r|
+          puts r.inspect.yellow
+          r.list.each do |category|
             puts category.inspect.green
             create_or_update_category(category)
             # get product for this category and create/update it
-            Pasteque::PastequeIntegration.fetch_product_by_category(category[:id]).execute do |c|
-              c.success do |product_list|
-                product_list.each do |product|
+            Pasteque::PastequeIntegration.fetch_product_by_category(category[:id], r.token).execute do |c|
+              c.success do |r|
+                self.token = r.token
+                r.list.each do |product|
                   puts product.inspect.yellow
                   create_or_update_variant(product, category[:id])
                 end
@@ -30,9 +41,10 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
       end
 
       # get cash register (aka cashes)
-      Pasteque::PastequeIntegration.fetch_cash_registers.execute do |c|
-        c.success do |cash_registers|
-          cash_registers.each do |cash_register|
+      Pasteque::PastequeIntegration.fetch_cash_registers(token).execute do |c|
+        c.success do |r|
+          self.token = r.token
+          r.list.each do |cash_register|
             puts cash_register.inspect.red
             #create_or_update_cash(cash_register[:id])
           end
@@ -40,9 +52,10 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
       end
 
       # get payment mode (aka incoming_payment mode) for all cashes
-      Pasteque::PastequeIntegration.fetch_payment_modes.execute do |c|
-        c.success do |payment_modes|
-          payment_modes.each do |payment_mode|
+      Pasteque::PastequeIntegration.fetch_payment_modes(token).execute do |c|
+        c.success do |r|
+          self.token = r.token
+          r.list.each do |payment_mode|
             puts payment_mode.inspect.yellow
             #create_or_update_incoming_payment_mode(payment_mode[:id])
           end
