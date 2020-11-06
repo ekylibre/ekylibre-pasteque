@@ -12,6 +12,7 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
       # get category and create/update it
       Pasteque::PastequeIntegration.fetch_category.execute do |c|
         c.success do |list|
+          puts list.inspect.yellow
           list.each do |category|
             puts category.inspect.green
             create_or_update_category(category)

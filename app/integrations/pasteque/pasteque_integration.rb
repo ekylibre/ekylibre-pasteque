@@ -40,7 +40,7 @@ module Pasteque
     # payload = {"login": login, "password": password}
     # r =
 
-    calls :get_token, :fetch_category, :fetch_product_by_category, :fetch_payment_modes, :fetch_cash_registers
+    calls :get_token, :fetch_category, :fetch_product_by_category, :fetch_payment_modes, :fetch_cash_registers, :set_token
 
     # Get token with login and password
     def get_token
@@ -65,6 +65,7 @@ module Pasteque
       # Call API
       get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => integration.parameters['token']) do |r|
         r.success do
+          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
       end
@@ -79,6 +80,7 @@ module Pasteque
       # Call API
       get_json(integration.parameters['host'] + PROD_BY_CATEGORY_URL + category_id.to_s, 'Token' => integration.parameters['token']) do |r|
         r.success do
+          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
       end
@@ -93,6 +95,7 @@ module Pasteque
       # Call API
       get_json(integration.parameters['host'] + PAYMENT_MODES_URL, 'Token' => integration.parameters['token']) do |r|
         r.success do
+          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
       end
@@ -107,9 +110,17 @@ module Pasteque
       # Call API
       get_json(integration.parameters['host'] + CASH_REGISTER_URL, 'Token' => integration.parameters['token']) do |r|
         r.success do
+          set_token(integration, r)
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
         end
       end
+    end
+
+    def set_token(integration, r)
+      puts "Set token : #{r.headers}".inspect.green
+      puts "R success : #{r.headers['token'].first}".inspect.green
+      integration.parameters['token'] = r.headers['token'].first
+      integration.save!
     end
 
     # Check if the API is up
