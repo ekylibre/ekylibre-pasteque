@@ -8,6 +8,10 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
 
   attr_accessor :token
 
+  # global notes
+  # we don't manage country and currency for the moment
+  # all is € and fr for taxes
+
   def perform
     # get token because it's refresh on each call in headers
     Pasteque::PastequeIntegration.get_token.execute do |c|
@@ -31,11 +35,22 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
               c.success do |r|
                 self.token = r.token
                 r.list.each do |product|
-                  puts product.inspect.yellow
+                  puts product.inspect.green
                   create_or_update_variant(product, category[:id])
                 end
               end
             end
+          end
+        end
+      end
+
+      # get taxes
+      Pasteque::PastequeIntegration.fetch_taxes(token).execute do |c|
+        c.success do |r|
+          self.token = r.token
+          r.list.each do |tax|
+            puts tax.inspect.green
+            create_or_update_tax(tax)
           end
         end
       end
@@ -45,19 +60,29 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
         c.success do |r|
           self.token = r.token
           r.list.each do |cash_register|
-            puts cash_register.inspect.red
-            #create_or_update_cash(cash_register[:id])
+            puts cash_register.inspect.yellow
+            # create_or_update_cash(cash_register)
+            # get all payment mode (aka incoming_payment mode) for each cashes and create it in Ekylibre
+            Pasteque::PastequeIntegration.fetch_payment_modes(token).execute do |c|
+              c.success do |r|
+                self.token = r.token
+                r.list.each do |payment_mode|
+                  puts payment_mode.inspect.yellow
+                  #create_or_update_incoming_payment_mode(payment_mode, cash_register)
+                end
+              end
+            end
           end
         end
       end
 
-      # get payment mode (aka incoming_payment mode) for all cashes
-      Pasteque::PastequeIntegration.fetch_payment_modes(token).execute do |c|
+      # get all ticket
+      Pasteque::PastequeIntegration.fetch_tickets(token).execute do |c|
         c.success do |r|
           self.token = r.token
-          r.list.each do |payment_mode|
-            puts payment_mode.inspect.yellow
-            #create_or_update_incoming_payment_mode(payment_mode[:id])
+          r.list.each do |ticket|
+            puts ticket.inspect.yellow
+            #create_or_update_ticket()
           end
         end
       end
@@ -107,14 +132,33 @@ class PastequeFetchUpdateCreateJob < ActiveJob::Base
       pnv.category_id = pnc.id
       pnv.save!
     end
-    # create or update price for variant
+    #TODO create or update price for variant
   end
 
-  def create_or_update_incoming_payment_mode(payment_mode_id)
-    #TODO
+  def create_or_update_tax(tax)
+    taxe = Tax.where("provider ->> 'vendor' = ? AND (provider ->> 'id')::int = ?", VENDOR, tax[:id]).first
+    if taxe
+      taxe.name = tax[:name]
+      pnc.save!
+    else
+      tax_ref = Nomen::Tax.where(amount: tax[:rate] * 100, country: :fr).first
+      if tax_ref
+        taxe = Tax.import_from_nomenclature(tax_ref.name, true)
+        taxe.name = tax[:name]
+        taxe.description = "Pasteque"
+        taxe.provider = {vendor: VENDOR, id: tax[:id]}
+        taxe.save!
+      else
+        raise StandardError.new("Can not find tax in reference for #{tax[:name]} having rate : #{tax[:rate]}")
+      end
+    end
   end
 
-  def create_or_update_cash(cash_register_id)
-    # TODO
+  def create_or_update_incoming_payment_mode(payment_mode, cash_register)
+    #TODO create or update incoming_payment_mode
+  end
+
+  def create_or_update_cash(cash_register)
+    #TODO create or update cash
   end
 end

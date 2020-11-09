@@ -22,8 +22,10 @@ module Pasteque
     TOKEN_URL = "/api/login".freeze
     CATEGORY_URL = "/api/category/getAll".freeze
     PROD_BY_CATEGORY_URL = "/api/product/getByCategory/".freeze
-    PAYMENT_MODES_URL = "/api/paymentmodes/getAll".freeze
+    PAYMENT_MODES_URL = "/api/paymentmode/getAll".freeze
     CASH_REGISTER_URL = "/api/cashregister/getAll".freeze
+    SEARCH_TICKET_URL = "/api/ticket/search".freeze
+    TAX_URL = "/api/tax/getAll".freeze
 
     authenticate_with :check do
       parameter :host
@@ -40,7 +42,7 @@ module Pasteque
     # payload = {"login": login, "password": password}
     # r =
 
-    calls :get_token, :fetch_category, :fetch_product_by_category, :fetch_payment_modes, :fetch_cash_registers, :set_token
+    calls :get_token, :fetch_category, :fetch_taxes, :fetch_product_by_category, :fetch_payment_modes, :fetch_cash_registers, :set_token, :fetch_tickets
 
     # Get token with login and password
     def get_token
@@ -57,6 +59,17 @@ module Pasteque
       integration = fetch
       # Call API
       get_json(integration.parameters['host'] + CATEGORY_URL, 'Token' => token) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
+        end
+      end
+    end
+
+    def fetch_taxes(token)
+      integration = fetch
+      # Call API
+      get_json(integration.parameters['host'] + TAX_URL, 'Token' => token) do |r|
         r.success do
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
           response(r, list: list)
@@ -90,6 +103,22 @@ module Pasteque
       integration = fetch
       # Call API
       get_json(integration.parameters['host'] + CASH_REGISTER_URL, 'Token' => token) do |r|
+        r.success do
+          list = JSON(r.body).map{|p| p.deep_symbolize_keys}
+          response(r, list: list)
+        end
+      end
+    end
+
+    def fetch_tickets(token, cash_register_id = nil, start = nil, stop = nil)
+      integration = fetch
+      params = {}
+      params['Token'] = token
+      if cash_register_id
+        params['cashRegister'] = cash_register_id
+      end
+      # Call API
+      get_json(integration.parameters['host'] + SEARCH_TICKET_URL, params) do |r|
         r.success do
           list = JSON(r.body).map{|p| p.deep_symbolize_keys}
           response(r, list: list)
